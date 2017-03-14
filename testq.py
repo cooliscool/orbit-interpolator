@@ -33,9 +33,9 @@ def readXYZ(filename):
 	for line in str:
 		parts = line.split('\t')
 		try : 
-			x.append(float(parts[1]))
-			y.append(float(parts[2]))
-			z.append(float(parts[3]))
+			x.append(float(parts[4]))
+			y.append(float(parts[5]))
+			z.append(float(parts[6]))
 		except ValueError:
 			print ''
 
@@ -50,12 +50,12 @@ def difference(a,b):
 
 def get3Coordinates(x, y, z):
 	a = len(x)
-	#i  = randint(0, a-1)
-	#j  = randint(0, a-1)
-	#k  = randint(0, a-1)
-	i = 30
-	j = 70
-	k = 120
+	i  = randint(0, a-1)
+	j  = randint(0, a-1)
+	k  = randint(0, a-1)
+	#i = 30
+	#j = 70
+	#k = 120
 
 	return ( (x[i], y[i], z[i]), (x[j], y[j], z[j]) ,(x[k], y[k], z[k]) ) 
 
@@ -127,6 +127,7 @@ def getE(r,v):
 
 def getPeriapsisArgument(h,e):
 	n = np.cross(np.array([0,0,1]), np.array(h))
+	print np.dot(n,e) / np.linalg.norm(n)* np.linalg.norm(e)
 	return math.acos(  np.dot(n,e) / np.linalg.norm(n)* np.linalg.norm(e)) * 180.0 / math.pi
 
 def getMajorAxis(h,e):
@@ -136,6 +137,34 @@ def getMajorAxis(h,e):
 	apo = (h**2 / (mu*(1-e)))
 	peri = (h**2 / (mu*(1+e)))
 	return (apo+peri)/2
+
+def findOrbitalParams(x,y,z, itr):
+
+	sum = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
+
+	for v in range(0, itr):
+		try:
+			a, b, c = get3Coordinates(x,y,z) # returns lists a,b,c
+			planeDir = getOrbitPlaneDirection(a,b,c)
+			i 		= getInclination(planeDir)
+			raan 	= getRaan(planeDir)
+			va, vb, vc = getVelocity(a,b,c) # returns array
+			e 		= getE(a, va) # returns array
+			abse	= np.linalg.norm(e)
+			h 		= np.cross(a, va)
+			majora 	= getMajorAxis(h,e)
+			omega  	= getPeriapsisArgument(planeDir,e)
+
+			sum		+= np.array([majora, abse, i, raan, omega])
+		except ValueError:
+			itr-=1
+
+	#print a, b ,c 
+	#print 'planedir : ', planeDir
+	#print va,vb,vc
+	return sum/(itr)
+	
+
 if __name__ == '__main__':
 
 	x, y, z =  readXYZ("trackdata.csv");
@@ -145,28 +174,6 @@ if __name__ == '__main__':
 	plt.grid()
 	#plt.show()
 
-
-	a, b, c = get3Coordinates(x,y,z) # returns lists a,b,c
+	params = findOrbitalParams(x,y,z,20)
 	
-	planeDir = getOrbitPlaneDirection(a,b,c)
-
-	i = getInclination(planeDir)
-
-	raan = getRaan(planeDir)
-
-	va, vb, vc = getVelocity(a,b,c) # returns array
-
-	e = getE(a, va) # returns array
-
-	h = np.cross(a, va)
-
-	majora = getMajorAxis(h,e)
-	print a, b ,c 
-	print 'planedir : ', planeDir
-	print va,vb,vc
-	print 'e : ', e, ' |e| :  ', np.linalg.norm(e)
-	print 'i : ', i
-	print 'raan: ', raan
-	print 'omega: ', getPeriapsisArgument(planeDir,e)
-	print 'a : ', majora
-	
+	print '( a, e, i, raan, omega ) ', params
