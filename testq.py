@@ -11,7 +11,7 @@
 import matplotlib.pylab as plt
 import numpy as np
 from numpy.linalg import eig, inv
-
+from random import randint
 
 def readXYZ(filename):
 	x = []
@@ -50,8 +50,12 @@ def fitEllipse(x,y):
 def getPlaneDirection():
 	return
 
-def get3PointCombination():
-	return
+def get3Coordinates(x, y, z):
+	a = len(x)
+	i  = randint(0, a-1)
+	j  = randint(0, a-1)
+	k  = randint(0, a-1)
+	return ( (x[i], y[i], z[i]), (x[j], y[j], z[j]) ,(x[k], y[k], z[k]) ) 
 
 def rotate():
 	return
@@ -82,11 +86,29 @@ def ellipse_axis_length( a ):
 def displayEllipse(a):
 	return
 
+def difference(a,b):
+	# This function assumes the input to be a 3d vector
+	return (a[0] - b[0] , a[1] - b[1] , a[2] - b[2] )
+
 
 def getPlaneDirection(a,b,c):
+
+	# there are two possible directions for any plane.
+	# say, if one is x, other one should be -x .
+	# This function always returns the direction with positive value
+	# of z- coordinate, just as a convention
+	# (x is a unit vector)
+
+	x = np.cross (np.array( difference(a, b )), np.array( difference(c,b) )) 
+	mod = np.dot(x,x) ** 0.5
+		
+	# returns the unit vector with positive z component
+	if  x[2]/mod<0:
+		return (-1*x[0]/mod, -1*x[1]/mod, -1*x[2]/mod)
+	else : 
+		return (x[0]/mod, x[1]/mod, x[2]/mod)
+
 	
-	
-	return
 if __name__ == '__main__':
 
 	x, y, z =  readXYZ("trackdata.csv");
@@ -96,8 +118,11 @@ if __name__ == '__main__':
 	plt.plot(0, 0, "o")
 	plt.plot(x, y)
 	plt.grid()
-	plt.show()
+	#plt.show()
 
 
-	print len(x)
+	a, b, c = get3Coordinates(x,y,z)
 	
+	planeDir = getPlaneDirection(a,b,c)
+
+	print planeDir
