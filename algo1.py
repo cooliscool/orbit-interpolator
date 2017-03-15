@@ -1,16 +1,14 @@
-# Algorithm 
-
-# 1) parse x, y, z coordinates from file.
-# 2) fit the curve for obtained x, y coordinate set (an ellipse in XY plane)
-# 3) choose random 3 (x,y,z) points from the dataset and find direction of orbital plane 
-#    Equation of a plane can be found using any three points on the plane. 
-# 4) do the same for several combinations of 3 point set (for getting an average estimate)
-# 5) rotate the plane to the target plane coordinate system, which is the final orbit 
-# 6) calculate the keplerian orbital elements (i,raan, argument_of_periapsis, a, e)
+# Mohammed Ajmal 
 
 # Method 1 : using Gibb's method and averaging to find the orbit needed.
 
-
+"""
+1. Parse the file and get (x,y,z) set of coordinates.
+2. Choose random points (set of 3) from the data set.
+3. Find orbital parameters.
+4. Repeat above set for given number of iterations.
+5. Output the averaged value of orbital parameters.
+"""
 # physical constants
 mu = 398600.0
 
@@ -53,9 +51,7 @@ def get3Coordinates(x, y, z):
 	i  = randint(0, a/3)
 	j  = randint(a/3, 2*a/3)
 	k  = randint(2*a/3, a-1)
-	#i = 30
-	#j = 70
-	#k = 120
+
 	if i==j | j==k | k==i :
 		raise ValueError('Randomly chosen points happened to be same')
 	print  (i,j,k ) 
@@ -107,7 +103,7 @@ def getVelocity(a, b, c):
 	cXa = np.cross(c,a)
 
 	if abs(np.dot( a, aXb)) > 0.00001:
-		return 'vectors a, b, c are not coplanar'
+		raise ValueError('Vectors are not coplanar')
    	
 	N = aXb*modc + bXc*moda + cXa*modb
 	D = aXb + bXc + cXa
@@ -129,7 +125,6 @@ def getE(r,v):
 
 def getPeriapsisArgument(h,e):
 	n = np.cross(np.array([0,0,1]), np.array(h))
-	#print np.dot(n,e) / norm(n)* norm(e)
 	return math.acos(  np.dot(n,e) / (norm(n)* norm(e))) * 180.0 / math.pi
 
 def getMajorAxis(h,e):
@@ -148,37 +143,33 @@ def findOrbitalParams(x,y,z, itr):
 		try:
 			a, b, c = get3Coordinates(x,y,z) # returns lists a,b,c
 			planeDir = getOrbitPlaneDirection(a,b,c)
-			i 		= getInclination(planeDir)
+			i 	= getInclination(planeDir)
 			raan 	= getRaan(planeDir)
 			va, vb, vc = getVelocity(a,b,c) # returns array
-			e 		= getE(a, va) # returns array
+			e 	= getE(a, va) # returns array
 			abse	= norm(e)
-			h 		= np.cross(a, va)
+			h 	= np.cross(a, va)
 			majora 	= getMajorAxis(h,e)
 			omega  	= getPeriapsisArgument(planeDir,e)
 
-			sum		+= np.array([majora, abse, i, raan, omega])
-			print (majora, abse, i, raan, omega)
-			v 		+= 1
+			sum	+= np.array([majora, abse, i, raan, omega])
+			#print (majora, abse, i, raan, omega)
+			v 	+= 1
 		except ValueError as err:
-			print v, err
+			print ''
 
-	#print a, b ,c 
-	#print 'planedir : ', planeDir
-	#print va,vb,vc
-	print v
+	#print v
 	return sum/(v)
-	
+
+def plotValue(values):
+	plt.plot(values,   "*")
+	plt.grid()
+	plt.show()	
 
 if __name__ == '__main__':
-
-	x, y, z =  readXYZ("trackdata.csv");
 	
-	plt.plot(0, 0, "o")
-	plt.plot(x, y)
-	plt.grid()
-	#plt.show()
-
-	params = findOrbitalParams(x,y,z,10)
+	iterations = 10
+	x, y, z =  readXYZ("trackdata.csv");	
+	params = findOrbitalParams(x,y,z, iterations)
 	
-	print '( a, e, i, raan, omega ) ', params
+	print '( a, e, i, raan, omega ) \n', params
