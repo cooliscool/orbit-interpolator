@@ -17,22 +17,24 @@ mu = 398600.0
 
 import matplotlib.pylab as plt
 import numpy as np
-from numpy.linalg import eig, inv
+from numpy.linalg import norm
 from random import randint
 import math
 
 def readXYZ(filename):
-	x = []
-	y = []
-	z = []
+	x = []; y = [];	z = []
 
 	file = open(filename, "r")
-
 	str = file.readlines()
 
 	for line in str:
 		parts = line.split('\t')
 		try : 
+			#for errorless datas
+			#x.append(float(parts[1]))
+			#y.append(float(parts[2]))
+			#z.append(float(parts[3]))
+			#for jittery data 
 			x.append(float(parts[4]))
 			y.append(float(parts[5]))
 			z.append(float(parts[6]))
@@ -42,21 +44,21 @@ def readXYZ(filename):
 	file.close();
 	return (x,y,z)
 
-
-
-def difference(a,b):
-	# This function assumes the input to be a 3d vector
-	return (a[0] - b[0] , a[1] - b[1] , a[2] - b[2] )
-
 def get3Coordinates(x, y, z):
+	# We select the set of 'a' coordinates into group of three and 
+	# select a coordinate randomly from each group. 
+	# This is done to ensure atleast some level of spacing between
+	# three points selected.
 	a = len(x)
-	i  = randint(0, a-1)
-	j  = randint(0, a-1)
-	k  = randint(0, a-1)
+	i  = randint(0, a/3)
+	j  = randint(a/3, 2*a/3)
+	k  = randint(2*a/3, a-1)
 	#i = 30
 	#j = 70
 	#k = 120
-
+	if i==j | j==k | k==i :
+		raise ValueError('Randomly chosen points happened to be same')
+	print  (i,j,k ) 
 	return ( (x[i], y[i], z[i]), (x[j], y[j], z[j]) ,(x[k], y[k], z[k]) ) 
 
 
@@ -68,8 +70,8 @@ def getOrbitPlaneDirection(a,b,c):
 	# of z- coordinate, just as a convention
 	# (x is a unit vector)
 
-	x = np.cross (np.array( difference(a, b )), np.array( difference(c,b) )) 
-	mod = np.linalg.norm(x)
+	x = np.cross (np.array(a)-np.array(b), np.array( c) -np.array(b) )
+	mod = norm(x)
 
 	# returns the unit vector with positive z component
 	if  x[2]/mod<0:
@@ -79,12 +81,12 @@ def getOrbitPlaneDirection(a,b,c):
 
 def getInclination(h):
 	# h is the direction of orbital plane with respect to ECI frame
-	return (math.acos(h[2] /np.linalg.norm(h)) * 180.0 / math.pi)
+	return (math.acos(h[2] /norm(h)) * 180.0 / math.pi)
 
 def getRaan(h):
 	# h is the direction of orbital plane with respect to ECI frame
 	n = np.cross(np.array([0,0,1]), np.array(h))
-	return (math.acos(n[0] /np.linalg.norm(n)) * 180.0 / math.pi)
+	return (math.acos(n[0] /norm(n)) * 180.0 / math.pi)
 
 def getVelocity(a, b, c):
 	# Gibb's method to get velocity of three points, which we feed in order
@@ -97,9 +99,9 @@ def getVelocity(a, b, c):
 	a = np.array(a)
 	b = np.array(b)
 	c = np.array(c)
-	moda = np.linalg.norm(a)
-	modb = np.linalg.norm(b)
-	modc = np.linalg.norm(c)
+	moda = norm(a)
+	modb = norm(b)
+	modc = norm(c)
 	aXb = np.cross(a,b)
 	bXc = np.cross(b,c)
 	cXa = np.cross(c,a)
@@ -111,38 +113,38 @@ def getVelocity(a, b, c):
 	D = aXb + bXc + cXa
 	S = a*(modb - modc) + b*(modc - moda) + c*(moda - modb)
 
-	va = ((mu/(np.linalg.norm(N)* np.linalg.norm(D)))**0.5) * (S + (np.cross (D,a)/moda)) 
-	vb = ((mu/(np.linalg.norm(N)* np.linalg.norm(D)))**0.5) * (S + (np.cross (D,b)/modb))
-	vc = ((mu/(np.linalg.norm(N)* np.linalg.norm(D)))**0.5) * (S + (np.cross (D,c)/modc)) 
+	va = ((mu/(norm(N)* norm(D)))**0.5) * (S + (np.cross (D,a)/moda)) 
+	vb = ((mu/(norm(N)* norm(D)))**0.5) * (S + (np.cross (D,b)/modb))
+	vc = ((mu/(norm(N)* norm(D)))**0.5) * (S + (np.cross (D,c)/modc)) 
 
 	return (va, vb, vc)
 
 def getE(r,v):
 	r = np.array(r)
 	v = np.array(v)
-	modr = np.linalg.norm(r)
-	modv = np.linalg.norm(v)
+	modr = norm(r)
+	modv = norm(v)
 	e = ((modv**2 - (mu/modr))*r  - (np.dot(r,v))*v )/mu
 	return e
 
 def getPeriapsisArgument(h,e):
 	n = np.cross(np.array([0,0,1]), np.array(h))
-	print np.dot(n,e) / np.linalg.norm(n)* np.linalg.norm(e)
-	return math.acos(  np.dot(n,e) / np.linalg.norm(n)* np.linalg.norm(e)) * 180.0 / math.pi
+	#print np.dot(n,e) / norm(n)* norm(e)
+	return math.acos(  np.dot(n,e) / (norm(n)* norm(e))) * 180.0 / math.pi
 
 def getMajorAxis(h,e):
 
-	h = np.linalg.norm(h)
-	e = np.linalg.norm(e)
+	h = norm(h)
+	e = norm(e)
 	apo = (h**2 / (mu*(1-e)))
 	peri = (h**2 / (mu*(1+e)))
-	return (apo+peri)/2
+	return (abs(apo)+abs(peri))/2
 
 def findOrbitalParams(x,y,z, itr):
 
 	sum = np.array([0.0, 0.0, 0.0, 0.0, 0.0])
-
-	for v in range(0, itr):
+	v = 0
+	while (v <itr):
 		try:
 			a, b, c = get3Coordinates(x,y,z) # returns lists a,b,c
 			planeDir = getOrbitPlaneDirection(a,b,c)
@@ -150,19 +152,22 @@ def findOrbitalParams(x,y,z, itr):
 			raan 	= getRaan(planeDir)
 			va, vb, vc = getVelocity(a,b,c) # returns array
 			e 		= getE(a, va) # returns array
-			abse	= np.linalg.norm(e)
+			abse	= norm(e)
 			h 		= np.cross(a, va)
 			majora 	= getMajorAxis(h,e)
 			omega  	= getPeriapsisArgument(planeDir,e)
 
 			sum		+= np.array([majora, abse, i, raan, omega])
-		except ValueError:
-			itr-=1
+			print (majora, abse, i, raan, omega)
+			v 		+= 1
+		except ValueError as err:
+			print v, err
 
 	#print a, b ,c 
 	#print 'planedir : ', planeDir
 	#print va,vb,vc
-	return sum/(itr)
+	print v
+	return sum/(v)
 	
 
 if __name__ == '__main__':
@@ -174,6 +179,6 @@ if __name__ == '__main__':
 	plt.grid()
 	#plt.show()
 
-	params = findOrbitalParams(x,y,z,20)
+	params = findOrbitalParams(x,y,z,10)
 	
 	print '( a, e, i, raan, omega ) ', params
