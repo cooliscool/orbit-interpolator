@@ -42,3 +42,5 @@ Algo 2: (yet to implement)
   
 ### How good is the Code ? 
 
+a is not converging well.
+Convergence of e, i, raan, omega is well enough.
