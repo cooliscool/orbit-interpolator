@@ -54,7 +54,7 @@ def get3Coordinates(x, y, z):
 
 	if i==j | j==k | k==i :
 		raise ValueError('Randomly chosen points happened to be same')
-	print  (i,j,k ) 
+	#print  (i,j,k ) 
 	return ( (x[i], y[i], z[i]), (x[j], y[j], z[j]) ,(x[k], y[k], z[k]) ) 
 
 
